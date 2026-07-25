@@ -707,6 +707,7 @@ final class BLEService: NSObject {
     /// or advertising while the full panic transaction is incomplete.
     func suspendForPanicReset() {
         setPanicSuspended(true)
+        noisePacketHandler.resetForPanic()
         gossipSyncManager?.stop()
         gossipSyncManager = nil
         // Stop the radio and drain CoreBluetooth's delegate queue first. A
@@ -717,7 +718,11 @@ final class BLEService: NSObject {
         // Drain every receive/send submitted by callbacks that finished ahead
         // of the radio stop. Later callbacks observe the closed lifecycle, and
         // generation-bound handoffs that raced this barrier reject themselves.
-        messageQueue.sync(flags: .barrier) {}
+        // Clear the old identity's bounded early-ciphertext queue again after
+        // those callbacks drain so none can repopulate it after the first wipe.
+        messageQueue.sync(flags: .barrier) {
+            noisePacketHandler.resetForPanic()
+        }
         clearEmergencySessionState()
     }
 
@@ -736,6 +741,7 @@ final class BLEService: NSObject {
         gossipSyncManager?.stop()
         gossipSyncManager = nil
         messageQueue.sync(flags: .barrier) {
+            noisePacketHandler.resetForPanic()
             pendingNoiseSessionQueues.removeAll()
         }
 
