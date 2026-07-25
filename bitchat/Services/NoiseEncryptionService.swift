@@ -97,7 +97,7 @@ enum EncryptionStatus: Equatable {
     case noiseHandshaking   // Currently establishing
     case noiseSecured       // Established but not verified
     case noiseVerified      // Established and verified
-    
+
     var icon: String? {  // Made optional to hide icon when no handshake
         switch self {
         case .none:
@@ -660,7 +660,7 @@ final class NoiseEncryptionService {
         guard let packetData = packet.toBinaryDataForSigning() else {
             return nil
         }
-        
+
         // Sign with the noise private key (converted to Ed25519 for signing)
         guard let signature = signData(packetData) else {
             return nil
@@ -919,7 +919,7 @@ final class NoiseEncryptionService {
         }
         return try sessionManager.encrypt(data, for: peerID)
     }
-    
+
     /// Decrypt data from a specific peer
     func decrypt(_ data: Data, from peerID: PeerID) throws -> Data {
         try decryptWithSessionGeneration(data, from: peerID).plaintext
@@ -936,7 +936,7 @@ final class NoiseEncryptionService {
         let isStandardCiphertext = NoiseSecurityValidator.validateCiphertextSize(data)
         let isAdmittedCiphertext = isStandardCiphertext
             || NoiseSecurityValidator.validatePrivateFileCiphertextSize(data)
-        
+
         // A quarantined transport is deliberately unavailable for outbound
         // state, but remains receive-only until the responder proves identity
         // or the bounded rollback restores it.
