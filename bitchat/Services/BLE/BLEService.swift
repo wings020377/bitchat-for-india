@@ -4251,16 +4251,40 @@ extension BLEService {
 
     private func emitTransportEvent(_ event: TransportEvent) {
         notifyUI { [weak self] in
-            self?.deliverTransportEvent(event)
+            _ = self?.deliverTransportEvent(event)
         }
     }
 
     @MainActor
-    private func deliverTransportEvent(_ event: TransportEvent) {
+    @discardableResult
+    private func deliverTransportEvent(_ event: TransportEvent) -> Bool {
+        if case .messageReceived(let message) = event {
+            if let synchronousDelegate =
+                eventDelegate as? SynchronousMessageTransportEventDelegate {
+                return synchronousDelegate
+                    .didReceiveTransportMessageSynchronously(message)
+            }
+            if let eventDelegate {
+                eventDelegate.didReceiveTransportEvent(event)
+                return false
+            }
+            if let synchronousDelegate =
+                delegate as? SynchronousMessageTransportEventDelegate {
+                return synchronousDelegate
+                    .didReceiveTransportMessageSynchronously(message)
+            }
+        }
+
         if let eventDelegate {
             eventDelegate.didReceiveTransportEvent(event)
+            return true
         } else {
-            delegate?.receiveTransportEvent(event)
+            guard let delegate else { return false }
+            delegate.receiveTransportEvent(event)
+            if case .messageReceived = event {
+                return false
+            }
+            return true
         }
     }
 
